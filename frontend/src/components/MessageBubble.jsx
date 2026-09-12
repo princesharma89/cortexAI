@@ -21,11 +21,10 @@ function MessageBubble({ role, content, images = [] }) {
   return (
     <>
       <div className={`flex ${isUser ? "justify-end" : "justify-start"} my-2`}>
-        <div className={`w-fit max-w-[92vw] md:max-w-[72%] px-4 py-2.5 rounded-2xl break-words overflow-hidden leading-relaxed ${
-          isUser
+        <div className={`w-fit max-w-[92vw] md:max-w-[72%] px-4 py-2.5 rounded-2xl break-words overflow-hidden leading-relaxed ${isUser
             ? "bg-gradient-to-br from-indigo-500 to-violet-700 text-white rounded-tr-sm"
             : "text-slate-200 rounded-tl-sm"
-        }`}>
+          }`}>
           {images && images.length > 0 && (
             <div className='flex flex-wrap gap-3 mb-3'>
               {images.map((img, i) => (
@@ -109,8 +108,8 @@ function MessageBubble({ role, content, images = [] }) {
                       <span className='uppercase text-xs text-slate-400 font-mono'>
                         {language}
                       </span>
-                      <button 
-                        className='flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition' 
+                      <button
+                        className='flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition'
                         onClick={() => copyCode(value)}
                       >
                         {copiedCode === value ? (
@@ -142,6 +141,18 @@ function MessageBubble({ role, content, images = [] }) {
                     </SyntaxHighlighter>
                   </div>
                 )
+              },
+              img: ({ src }) => {
+                if (!src) return null;
+                return (
+                  <img
+                    src={src}
+                    onClick={() => setLightBox(src)}
+                    loading="lazy"
+                    onError={(e) => e.currentTarget.remove()}
+                    className="w-40 h-28 rounded-xl object-cover border border-white/10 cursor-zoom-in hover:opacity-90 transition-opacity"
+                  />
+                );
               }
             }}
           >
