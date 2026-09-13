@@ -59,7 +59,7 @@ export const setConversationTitle=async (req,res) => {
         const conversation=await Conversation.findOneAndUpdate(
             { _id:id, $or:[{title:"New Chat"},{title:{$exists:false}},{title:null}] },
             { title:title.trim() },
-            { new:true, runValidators:true }
+            { returnDocument:"after", runValidators:true }
         )
 
         return res.status(200).json(conversation)

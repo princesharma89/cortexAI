@@ -49,7 +49,7 @@ ${userPrompt}`;
       .trim();
 
     const data = JSON.parse(rawContent);
-
+    await deductCredits(state.userId, "ppt");
     // Generate presentation buffer
     const ppt = await generatePpt(data);
     const buffer = await ppt.write({ outputType: "nodebuffer" });

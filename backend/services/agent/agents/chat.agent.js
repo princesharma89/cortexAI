@@ -5,8 +5,10 @@ import {
   HumanMessage,
   AIMessage,
 } from "@langchain/core/messages";
+import { deductCredits } from "../utils/deductCredits.js"
 
 export const chatAgent = async (state) => {
+   
   const llm = await getModel("chat");
   const storedHistory = await getMemory(state.conversationId);
   const history = Array.isArray(storedHistory) ? storedHistory : [];
@@ -73,6 +75,7 @@ Formatting:
   messages.push(new HumanMessage(prompt));
   const response = await llm.invoke(messages);
   messages.push(new AIMessage(response.content));
+  await deductCredits(state.userId, "chat");
   return {
     ...state,
     aiResponse: response.content,
