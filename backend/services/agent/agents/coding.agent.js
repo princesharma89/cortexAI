@@ -136,6 +136,7 @@ ${state.prompt}
         };
       }
     }
+    await deductCredits(state.userId, "coding");
     return {
       ...state,
       aiResponse: "Code Generated Successfully.",
@@ -177,6 +178,7 @@ User Request:
 ${state.prompt}
 `);
 const data=res.content
+await deductCredits(state.userId, "coding");
 return {
   ...state,
   aiResponse:data,
