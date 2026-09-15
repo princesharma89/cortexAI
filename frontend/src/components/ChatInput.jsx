@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import sendMessage from '../features/sendMessage'
 import { useDispatch } from 'react-redux'
-import { addMessage } from '../redux/messageSlice'
+import { addMessage, setIsLoading } from '../redux/messageSlice'
 import { createConversation } from '../features/createConversation'
 import { setSelectedConversation } from '../redux/conversationSlice'
 import { addConversation } from '../redux/conversationSlice'
@@ -12,6 +12,7 @@ import { updateConversation } from '../features/updateConversation'
 import { setConvTitle } from '../redux/conversationSlice'
 import { setArtifacts } from '../redux/messageSlice'
 import { Zap, MessageSquare, Code2, FileText, Presentation, ImageIcon, Globe,X } from 'lucide-react'
+
 
 function ChatInput() {
     const [value, setValue] = useState("")
@@ -23,6 +24,7 @@ function ChatInput() {
     const fileInputRef = useRef(null)
     const dispatch = useDispatch()
     const handleSendMessage = async () => {
+        dispatch(setIsLoading(true))
         if (isSending || !value.trim()) {
             return
         }
@@ -71,19 +73,20 @@ function ChatInput() {
             const agent = selectedAgent.toLowerCase() === "image"
                 ? "vision"
                 : selectedAgent.toLowerCase()
-            const payload = { prompt, conversationId: conversation._id, agent }
-
             const formData = new FormData();
             formData.append("prompt", value.trim());
             formData.append("conversationId", conversation?._id);
             formData.append("agent", selectedAgent.toLowerCase());
-            formData.append("file", selectedFile);
-            const data = await sendMessage(formData)
-            setSelectedFile(null)
+            if(selectedFile){
+                formData.append("file", selectedFile);
+            }
             dispatch(addMessage({ role: "user", content: prompt }))
+            setValue("")
+            const data = await sendMessage(formData)
+            dispatch(setIsLoading(false))
+            setSelectedFile(null)
             dispatch(setArtifacts(data?.artifacts || []))
             dispatch(addMessage({ role: "assistant", content: data?.answer, images: data?.images }))
-            setValue("")
             console.log(data)
         } catch (error) {
             setSendError(error.message)
