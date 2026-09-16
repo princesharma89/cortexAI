@@ -5,8 +5,10 @@ import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { getModel } from "../config/llmModels.js";
 import { vectorStore } from "../config/vectorDb.js";
 import { deductCredits } from "../utils/deductCredits.js";
+import { checkLimits } from "../utils/checkLimits.js";
 
 export const pdfRag = async (state) => {
+       await checkLimits(state.userId, "pdf");
   let collectionName = null;
   let store = null;
 
@@ -75,7 +77,7 @@ ${state.prompt}`),
     console.error("Error in pdfRag:", error);
     return {
       ...state,
-      aiResponse: "Failed to analyze PDF. Please try again.",
+      aiResponse: error?.data?.message || "Failed to analyze PDF. Please try again.",
     };
   } finally {
     // Cleanup temporary upload from disk

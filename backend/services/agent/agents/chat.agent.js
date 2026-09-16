@@ -6,9 +6,11 @@ import {
   AIMessage,
 } from "@langchain/core/messages";
 import { deductCredits } from "../utils/deductCredits.js"
+import { checkLimits } from "../utils/checkLimits.js"
 
 export const chatAgent = async (state) => {
-   
+  try{
+     await checkLimits(state.userId, "chat");
   const llm = await getModel("chat");
   const storedHistory = await getMemory(state.conversationId);
   const history = Array.isArray(storedHistory) ? storedHistory : [];
@@ -80,4 +82,12 @@ Formatting:
     ...state,
     aiResponse: response.content,
   };
+  }
+  catch(error){
+    console.error("Error in chatAgent:", error);
+    return {
+      ...state,
+      aiResponse: error?.data?.message || "❌ Failed to generate response.",
+    };
+  }
 };

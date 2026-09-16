@@ -3,9 +3,11 @@ import { generatePdf } from "../utils/generatePdf.js";
 import { uploadToS3 } from "../utils/uploadToS3.js";
 import { getFromS3 } from "../utils/getFromS3.js";
 import { deductCredits } from "../utils/deductCredits.js";
+import { checkLimits } from "../utils/checkLimits.js";
 
 export const pdfAgent = async (state) => {
   try {
+    await checkLimits(state.userId, "pdf");
     const llm = await getModel("pdf");
     const prompt = `
 You are an expert document writer.
@@ -60,10 +62,10 @@ _Link expires in 10 minutes._`,
     };
   } catch (error) {
     console.log(error);
+
     return {
-        ...state,
-        aiResponse: "❌ Failed to generate PDF."
+      ...state,
+      aiResponse: error?.data?.message || "failed to generate pdf",
     };
   }
-    }
-  
+};
