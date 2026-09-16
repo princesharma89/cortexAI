@@ -1,5 +1,6 @@
 import { getModel } from "../config/llmModels.js";
 import { deductCredits } from "../utils/deductCredits.js";
+import { checkLimits } from "../utils/checkLimits.js";
 
 const getModelText = (content) => {
   if (typeof content === "string") {
@@ -36,7 +37,10 @@ const parseModelJson = (content) => {
 };
 
 export const codingAgent = async (state) => {
-  const intentLlm = await getModel("intent");
+  
+ try{
+     await checkLimits(state.userId, "coding");
+ const intentLlm = await getModel("intent");
   const llm = await getModel("coding");
   const intentRes = await intentLlm.invoke(`
     You are an intent classifier.
@@ -185,4 +189,12 @@ return {
   aiResponse:data,
   artifacts:[],
 }
+ }
+ catch(error){
+return {
+  ...state,
+  aiResponse: error?.data?.message || "❌ Failed to generate code.",
+  artifacts:[],
+}
+ }
 };

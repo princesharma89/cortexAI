@@ -3,9 +3,11 @@ import { generatePpt } from "../utils/generatePpt.js";
 import { uploadToS3 } from "../utils/uploadToS3.js";
 import { getFromS3 } from "../utils/getFromS3.js";
 import { deductCredits } from "../utils/deductCredits.js";
+import { checkLimits } from "../utils/checkLimits.js";
 
 export const pptAgent = async (state) => {
   try {
+    await checkLimits(state.userId, "ppt");
     const llm = await getModel("ppt");
     const userPrompt = state?.prompt || state?.messages?.slice(-1)[0]?.content;
 
