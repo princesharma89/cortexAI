@@ -1,6 +1,6 @@
 import { Paperclip, Mic } from 'lucide-react'
 import { Send } from 'lucide-react'
-import { useState, useRef } from 'react'
+import { useState, useRef,useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import sendMessage from '../features/sendMessage'
 import { useDispatch } from 'react-redux'
@@ -11,7 +11,8 @@ import { addConversation } from '../redux/conversationSlice'
 import { updateConversation } from '../features/updateConversation'
 import { setConvTitle } from '../redux/conversationSlice'
 import { setArtifacts } from '../redux/messageSlice'
-import { Zap, MessageSquare, Code2, FileText, Presentation, ImageIcon, Globe,X } from 'lucide-react'
+import { Zap, MessageSquare, Code2, FileText, Presentation, ImageIcon, Globe, X,MicOff } from 'lucide-react'
+
 
 
 function ChatInput() {
@@ -21,8 +22,94 @@ function ChatInput() {
     const [sendError, setSendError] = useState("")
     const { selectedConversation } = useSelector(state => state.conversation)
     const [selectedFile, setSelectedFile] = useState(null)
+    const [listening, setListening] = useState(false);
+    const recognitionRef = useRef(null);
+    const finalTranscriptRef = useRef("");
     const fileInputRef = useRef(null)
     const dispatch = useDispatch()
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const SpeechRecognition =
+            window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) return;
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+            let finalText = "";
+            let interimText = "";
+
+            for (let index = event.resultIndex; index < event.results.length; index++) {
+                const result = event.results[index];
+                const transcript = result[0]?.transcript || "";
+
+                if (result.isFinal) {
+                    finalText += transcript.trim() + " ";
+                } else {
+                    interimText += transcript;
+                }
+            }
+
+            if (finalText.trim()) {
+                finalTranscriptRef.current = `${finalTranscriptRef.current} ${finalText.trim()}`.trim();
+            }
+
+            const nextValue = `${finalTranscriptRef.current}${interimText ? ` ${interimText.trim()}` : ""}`.trim();
+            setValue(nextValue);
+        };
+
+        recognition.onstart = () => setListening(true);
+
+        recognition.onend = () => {
+            setListening(false)
+            if (recognitionRef.current === recognition) {
+                recognitionRef.current = null;
+            }
+        };
+
+        recognition.onerror = (event) => {
+            setListening(false);
+            setSendError(event?.error ? `Voice input error: ${event.error}` : "Voice input failed. Please try again.");
+        };
+
+        recognitionRef.current = recognition;
+
+        return () => {
+            recognition.stop();
+            recognitionRef.current = null;
+        };
+    }, []);
+
+    const toggleMic = () => {
+        if (!recognitionRef.current) {
+            setSendError("Speech recognition is not supported in this browser.");
+            return;
+        }
+
+        if (listening) {
+            recognitionRef.current.stop();
+            setListening(false);
+            return;
+        }
+
+        finalTranscriptRef.current = "";
+        setValue("");
+        setSendError("");
+
+        try {
+            recognitionRef.current.start();
+        } catch (error) {
+            setListening(false);
+            setSendError("Microphone is already active. Please try again.");
+        }
+    };
+
     const handleSendMessage = async () => {
         dispatch(setIsLoading(true))
         if (isSending || !value.trim()) {
@@ -77,7 +164,7 @@ function ChatInput() {
             formData.append("prompt", value.trim());
             formData.append("conversationId", conversation?._id);
             formData.append("agent", selectedAgent.toLowerCase());
-            if(selectedFile){
+            if (selectedFile) {
                 formData.append("file", selectedFile);
             }
             dispatch(addMessage({ role: "user", content: prompt }))
@@ -186,26 +273,26 @@ function ChatInput() {
                                         />
                                     )
                                 )}
-                                 <div>
-                                <p className='text-xs text-white'>
-                                    {selectedFile?.name}
-                                </p>
-                                <p className='text-[10px] text-slate-500'>
-                                    {Math.ceil(selectedFile?.size / 1024)} KB
-                                </p>
-                            </div>
-                            <button
-                                className='ml-2'
-                                onClick={() => {
-                                    setSelectedFile(null);
-                                    if (fileInputRef.current) fileInputRef.current.value = "";
-                                }}
-                            >
-                                <X size={14} className='text-slate-500 hover:text-white' />
-                            </button>
+                                <div>
+                                    <p className='text-xs text-white'>
+                                        {selectedFile?.name}
+                                    </p>
+                                    <p className='text-[10px] text-slate-500'>
+                                        {Math.ceil(selectedFile?.size / 1024)} KB
+                                    </p>
+                                </div>
+                                <button
+                                    className='ml-2'
+                                    onClick={() => {
+                                        setSelectedFile(null);
+                                        if (fileInputRef.current) fileInputRef.current.value = "";
+                                    }}
+                                >
+                                    <X size={14} className='text-slate-500 hover:text-white' />
+                                </button>
 
                             </div>
-                           
+
                         </div>
                     )
                 }
@@ -232,8 +319,16 @@ function ChatInput() {
                         <button className='flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer' onClick={() => fileInputRef.current?.click()}>
                             <Paperclip size={16} />
                         </button>
-                        <button className='flex items-center justify-center w-8 h-8 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.06] transition-all duration-150 bg-transparent cursor-pointer'>
-                            <Mic size={16} />
+                        <button
+                            type="button"
+                            onClick={toggleMic}
+                            className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150 cursor-pointer ${listening
+                                    ? "bg-red-500 text-white animate-pulse"
+                                    : "text-slate-600 hover:bg-white/5 hover:text-slate-400"
+                                }`}
+                            aria-label={listening ? "Stop voice input" : "Start voice input"}
+                        >
+                            {listening ? <Mic size={16} /> : <MicOff size={16} />}
                         </button>
                     </div>
                     <button
